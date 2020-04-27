@@ -1,0 +1,64 @@
+import numpy as np
+import pandas as pd
+from nltk.tokenize import RegexpTokenizer
+from nltk.stem.porter import PorterStemmer
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+
+# In[4]:
+
+
+# Init Objects
+tokenizer = RegexpTokenizer(r'\w+')
+en_stopwords = set(stopwords.words('english'))
+ps = PorterStemmer()
+
+
+# In[8]:
+
+
+def getCleanReview(review):
+    
+    review = review.lower()
+    review = review.replace("<br /><br />"," ")
+    
+    #Tokenize
+    tokens = tokenizer.tokenize(review)
+    new_tokens = [token for token in tokens if token not in en_stopwords]
+    stemmed_tokens = [ps.stem(token) for token in new_tokens]
+    
+    cleaned_review = ' '.join(stemmed_tokens)
+    
+    return cleaned_review
+    
+    
+    
+df = pd.read_csv("Train/Train.csv")
+x_test = pd.read_csv("Test/Test.csv")
+x_test = x_test.values  #to convert into vector
+x_test = x_test[:,0]
+ds = df.values
+x_train = ds[:,0]
+y_train = ds[:,1]
+x_train = [i for i in x_train]
+y_train = [i for i in y_train]
+x_test = [i for i  in x_test]
+x_clean = [getCleanReview(i) for i in x_train] #List Comprehension
+xt_clean = [getCleanReview(i) for i in x_test] #List 
+cv = CountVectorizer(ngram_range= (1,4))
+
+x_vec = cv.fit_transform(x_clean)
+#print(x_vec)
+print(x_vec.shape)
+
+## Vectorization on the test set
+
+xt_vec = cv.transform(xt_clean)
+#print(xt_vec)
+#cv.get_feature_names()
+
+mnb = MultinomialNB()
+mnb.fit(x_vec,y_train)
+y_pred = mnb.predict(xt_vec)
